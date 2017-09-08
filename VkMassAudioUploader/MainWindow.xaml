@@ -1,0 +1,120 @@
+﻿<Window x:Class="VkMassAudioUploader.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:VkMassAudioUploader"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="750" Width="525">
+
+    <Window.Resources>
+        <Style TargetType="ListBox" x:Key="BotListViewStyle" BasedOn="{StaticResource {x:Type ListBox}}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding RelativeSource={x:Static RelativeSource.Self}, Path=Items.Count}" Value="0" >
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate>
+                                <TextBlock>Для продолжения требуется добавить пользователя выгрузки</TextBlock>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="ListBox" x:Key="LogListViewStyle" BasedOn="{StaticResource {x:Type ListBox}}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding RelativeSource={x:Static RelativeSource.Self}, Path=Items.Count}" Value="0" >
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate>
+                                <TextBlock>Место истории выгрузки .mp3</TextBlock>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <ScrollViewer>
+        <StackPanel>
+            <StackPanel>
+                <Label FontSize="20" Content="Шаг 1"/>
+                <Label Content="Войдите как админ группы" x:Name="AdminNameLabel"/>
+                <Button Content="Войти" Click="LoginButtonClick" Margin="10"/>
+            </StackPanel>
+            <StackPanel>
+                <Label FontSize="20" Content="Шаг 2"/>
+                <Label Content="Выберите группу"/>
+                <ComboBox Text="Выбери" DisplayMemberPath="Name" IsEditable="True" IsReadOnly="True" Margin="10" x:Name="ChooseGroupComboBox" />
+            </StackPanel>
+            <StackPanel>
+                <Label FontSize="20" Content="Шаг 3"/>
+                <Label Content="Войдите от других имен"/>
+                <ListBox x:Name="BotListView" Margin="10" Style="{StaticResource BotListViewStyle}" HorizontalContentAlignment="Stretch">
+                    
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Background="AliceBlue">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                                <ColumnDefinition Width="*"></ColumnDefinition>
+                                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"></RowDefinition>
+                            </Grid.RowDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <Label Content="{Binding Path=Name,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}" FontSize="22"/>
+                                    <Label Content="{Binding Path=Token,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}" FontSize="12"/>
+                            </StackPanel>
+                                <Label Grid.Column="2" Content="{Binding Path=Count,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}" FontSize="25" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <Grid Margin="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"></ColumnDefinition>
+                        <ColumnDefinition Width="*"></ColumnDefinition>
+                        <ColumnDefinition Width="Auto"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"></RowDefinition>
+                    </Grid.RowDefinitions>
+                    <Button Grid.Column="0" Content="Добавить" Click="AddButtonClick"/>
+                    <Button Grid.Column="2" Content="Удалить" Click="RemoveButtonClick"/>
+                </Grid>
+            </StackPanel>
+            <StackPanel>
+                <Label FontSize="20" Content="Шаг 4"/>
+                <Label Content="Выберите папку с музыкой"/>
+                <Button Content="Выбрать папку" Click="ChooseFolderButtonClick" Margin="10"/>
+            </StackPanel>
+            <StackPanel>
+                <Label FontSize="20" Content="Шаг 5"/>
+                <Label Content="Выгрузить музон в группу"/>
+                <ListBox x:Name="LogListView" Margin="10" MaxHeight="100" HorizontalContentAlignment="Stretch" Style="{StaticResource LogListViewStyle}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Background="{Binding Path=Color,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="*"></ColumnDefinition>
+                                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"></RowDefinition>
+                                </Grid.RowDefinitions>
+                                <Label Grid.Column="0" Content="{Binding Path=File,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" FontSize="25" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" />
+                                <Label Grid.Column="2" Content="{Binding Path=State,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" FontSize="25" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <ProgressBar x:Name="LoadProcess" Margin="10" Height="20" Value="1"/>
+                <Button Content="Отправить" Click="StartUploadButtonClick" Margin="10"/>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</Window>
