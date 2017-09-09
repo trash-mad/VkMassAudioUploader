@@ -35,7 +35,16 @@
             </Style.Triggers>
         </Style>
     </Window.Resources>
-
+    <Menu DockPanel.Dock="Top">
+        <MenuItem Header="Файл">
+            <MenuItem Header="Подгрузить токены ботов" Click="NewButton" />
+            <MenuItem Header="Сохранить токены ботов" Click="SaveData"/>
+        </MenuItem>
+        
+        <MenuItem Header="О программе">
+            <MenuItem Header="Разработчик" Click="ShowDeveloper" />
+        </MenuItem>
+    </Menu>
     <ScrollViewer>
         <StackPanel>
             <StackPanel>
@@ -43,19 +52,19 @@
                 <Label Content="Войдите как админ группы" x:Name="AdminNameLabel"/>
                 <Button Content="Войти" Click="LoginButtonClick" Margin="10"/>
             </StackPanel>
-            <StackPanel>
+            <StackPanel Opacity="0.5" x:Name="StepB">
                 <Label FontSize="20" Content="Шаг 2"/>
                 <Label Content="Выберите группу"/>
-                <ComboBox Text="Выбери" DisplayMemberPath="Name" IsEditable="True" IsReadOnly="True" Margin="10" x:Name="ChooseGroupComboBox" />
+                <ComboBox Text="Выбери" DisplayMemberPath="Name" IsEditable="True" IsReadOnly="True" Margin="10" x:Name="ChooseGroupComboBox" SelectionChanged="ChooseGroupComboBox_SelectionChanged"/>
             </StackPanel>
-            <StackPanel>
+            <StackPanel Opacity="0.5" x:Name="StepC">
                 <Label FontSize="20" Content="Шаг 3"/>
                 <Label Content="Войдите от других имен"/>
                 <ListBox x:Name="BotListView" Margin="10" Style="{StaticResource BotListViewStyle}" HorizontalContentAlignment="Stretch">
                     
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Grid Background="AliceBlue">
+                            <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"></ColumnDefinition>
                                 <ColumnDefinition Width="*"></ColumnDefinition>
@@ -73,7 +82,7 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
-                <Grid Margin="10">
+                <Grid Margin="10" x:Name="StepD">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"></ColumnDefinition>
                         <ColumnDefinition Width="*"></ColumnDefinition>
@@ -86,18 +95,18 @@
                     <Button Grid.Column="2" Content="Удалить" Click="RemoveButtonClick"/>
                 </Grid>
             </StackPanel>
-            <StackPanel>
+            <StackPanel Opacity="0.5" x:Name="StepE">
                 <Label FontSize="20" Content="Шаг 4"/>
                 <Label Content="Выберите папку с музыкой"/>
                 <Button Content="Выбрать папку" Click="ChooseFolderButtonClick" Margin="10"/>
             </StackPanel>
-            <StackPanel>
+            <StackPanel Opacity="0.5" x:Name="StepF">
                 <Label FontSize="20" Content="Шаг 5"/>
                 <Label Content="Выгрузить музон в группу"/>
                 <ListBox x:Name="LogListView" Margin="10" MaxHeight="100" HorizontalContentAlignment="Stretch" Style="{StaticResource LogListViewStyle}">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Grid Background="{Binding Path=Color,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}">
+                            <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"></ColumnDefinition>
                                     <ColumnDefinition Width="*"></ColumnDefinition>
@@ -112,9 +121,11 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
-                <ProgressBar x:Name="LoadProcess" Margin="10" Height="20" Value="1"/>
                 <Button Content="Отправить" Click="StartUploadButtonClick" Margin="10"/>
             </StackPanel>
+            <Rectangle Fill="Transparent" Height="250"/>
+            <Label FontSize="20" Content="Дополнительно"/>
+            <CheckBox Content="Подробно объяснять, почему файл не выложен" Checked="DebugChecked" />
         </StackPanel>
     </ScrollViewer>
 </Window>

@@ -15,6 +15,7 @@ using System.Windows.Shapes;
 using Microsoft.VisualBasic;
 using System.Web;
 using Newtonsoft.Json;
+using System.IO;
 
 namespace VkMassAudioUploader
 {
@@ -57,11 +58,16 @@ namespace VkMassAudioUploader
             set { Dispatcher.Invoke(new Action(() => { SetReturnValue(value); })); }
         }
 
+
         public VkLogin()
         {
             InitializeComponent();
+    
             WebView.LoadingStateChanged += WebView_LoadingStateChanged;
+
             WebView.Address = "https://oauth.vk.com/authorize?client_id=" + App.AppId + "&display=mobile&scope=offline,audio,groups&redirect_uri=https://oauth.vk.com/blank.html&response_type=token&v=5.68";
+            CefSharp.ICookieManager m = Cef.GetGlobalCookieManager();
+            if (!m.DeleteCookies("", "")) Interaction.MsgBox("Не стирается");
         }
 
         private void WebView_LoadingStateChanged(object sender, LoadingStateChangedEventArgs e)

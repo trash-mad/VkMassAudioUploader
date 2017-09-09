@@ -22,6 +22,7 @@ using System.IO;
 using System.Net.Http;
 using SeasideResearch.LibCurlNet;
 using System.Collections.Specialized;
+using System.Drawing;
 
 namespace VkMassAudioUploader
 {
@@ -59,13 +60,18 @@ namespace VkMassAudioUploader
 
     public class LogItem : INotifyPropertyChanged
     {
-        Color color;
+        public LogItem(string file,string state)
+        {
+            this.file = file;
+            this.state = state;
+        }
+
+
         string file;
         string state;
         public string File { get { return file; } set { file = value; OnPropertyChanged("File"); } }
         public string State { get { return state; } set { state = value; OnPropertyChanged("State"); } }
-        public Color Color { get { return color; } set { color = value; OnPropertyChanged("Color"); } }
-        
+ 
         protected void OnPropertyChanged(string name)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
@@ -76,14 +82,16 @@ namespace VkMassAudioUploader
 
     public partial class MainWindow : Window
     {
-        UserInfo admininfo=null;
+        UserInfo admininfo = null;
+
+        static bool isDebug = false;
 
         ObservableCollection<GroupParams> groups;
         ObservableCollection<Bot> bots;
         ObservableCollection<LogItem> log;
         List<String> musicpath;
 
-        public static Task<string> AccessVk(string parameters,string token)
+        public static Task<string> AccessVk(string parameters, string token)
         {
             return Task.Run(() =>
             {
@@ -96,7 +104,7 @@ namespace VkMassAudioUploader
                 {
                     responseText = reader.ReadToEnd();
                 }
-                Interaction.MsgBox(responseText);
+                if (responseText.IndexOf("error") > 0 && isDebug) Interaction.MsgBox(responseText);
                 return responseText;
             });
         }
@@ -119,13 +127,19 @@ namespace VkMassAudioUploader
             vk.ShowDialog();
             admininfo = vk.GetReturn();
 
+            if (admininfo == null)
+            {
+                Interaction.MsgBox("Нужно войти для продолжения...");
+                return;
+            }
+
             //Вывести имя
             AdminNameLabel.Content = admininfo.Name;
 
             //Заполнить список групп
             {
                 groups.Clear();
-                dynamic dynObj = JsonConvert.DeserializeObject(await AccessVk("groups.get?extended=1&offset=0&count=100&filter=admin",admininfo.Token));
+                dynamic dynObj = JsonConvert.DeserializeObject(await AccessVk("groups.get?extended=1&offset=0&count=100&filter=admin", admininfo.Token));
                 foreach (var item in dynObj.response.items)
                 {
 
@@ -135,12 +149,23 @@ namespace VkMassAudioUploader
                 }
             }
 
+            StepB.Opacity = 1;
+
 
         }
 
         private void AddButtonClick(object sender, RoutedEventArgs e)
         {
-            bots.Add(new Bot(admininfo, 0));
+            VkLogin vk = new VkLogin();
+            vk.ShowDialog();
+            UserInfo tmp = vk.GetReturn();
+            if (tmp == null)
+            {
+                Interaction.MsgBox("Нужно войти для продолжения...");
+                return;
+            }
+            bots.Add(new Bot(tmp, 0));
+            StepE.Opacity = 1;
         }
 
         private void RemoveButtonClick(object sender, RoutedEventArgs e)
@@ -160,7 +185,7 @@ namespace VkMassAudioUploader
                     string[] files = Directory.GetFiles(fbd.SelectedPath);
 
                     int count = 0;
-                    foreach(string item in files)
+                    foreach (string item in files)
                     {
                         if (item.Substring(item.Length - 4).ToLower() == ".mp3")
                         {
@@ -170,53 +195,174 @@ namespace VkMassAudioUploader
                     }
 
                     Interaction.MsgBox("В директории есть " + count + " .mp3");
+                    StepF.Opacity = 1;
                 }
             }
+            
         }
 
         private async void StartUploadButtonClick(object sender, RoutedEventArgs e)
         {
+                if (ChooseGroupComboBox.SelectedItem == null)
+                {
+                    Interaction.MsgBox("Нужно выбрать группу! См. шаг 2");
+                    return;
+                }
+
+                if (bots.Count == 0)
+                {
+                    Interaction.MsgBox("Нет ботов. Старт невозможен. См. пункт 4.");
+                    return;
+                }
+                if (musicpath.Count == 0)
+                {
+                    Interaction.MsgBox("Выберите директорию с музыкой");
+                    return;
+                 }
+
             string groupid = (ChooseGroupComboBox.SelectedItem as GroupParams).Id;
-
-            //Работаем с ботами по порядку
-            for (int i = 0; i < bots.Count; i++)
-            {
-                String uploadserver = null;
-
-                dynamic urlObj = JsonConvert.DeserializeObject(await AccessVk("audio.getUploadServer?", bots[i].Token));
-                uploadserver = urlObj.response.upload_url;
-
-
-                String server = null;
-                String audio = null;
-                String hash = null;
-                WebClient wc = new WebClient();
-                byte[] responseArray = wc.UploadFile(uploadserver, "post", @"C:\2.mp3");
-
-                dynamic paramsObj = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(responseArray));
-                server = paramsObj.server;
-                audio = paramsObj.audio;
-                hash = paramsObj.hash;
-
+                
                 
 
-                String id = null;
-                NameValueCollection queryString = System.Web.HttpUtility.ParseQueryString(string.Empty);
-                queryString["server"] = server;
-                queryString["audio"] = audio;
-                queryString["hash"] = hash;
-                Interaction.MsgBox(queryString.ToString());
-                dynamic saveObj = JsonConvert.DeserializeObject(await AccessVk("audio.save?"+ queryString.ToString(), bots[i].Token));
-                id = saveObj.response.id;
+                bool needmorebots = false;
+                int botnum = 0;
 
+                //Работаем с ботами по порядку
+                for (int i = musicpath.Count() - 1; i >= 0; i--)
+                {
+                    if (bots[botnum].Count >= 20)
+                    {
+                        botnum++;
+                    }
+                    if (botnum > bots.Count - 1)
+                    {
+                        needmorebots = true;
+                        break;
+                    }
 
-                dynamic addObj = JsonConvert.DeserializeObject(await AccessVk("audio.add?audio_id=" + id + "&owner_id=" + bots[i].ui.Id + "&group_id=" + groupid, bots[i].Token));
+                    String uploadserver = null;
+                    try
+                    {
+                        dynamic urlObj = JsonConvert.DeserializeObject(await AccessVk("audio.getUploadServer?", bots[botnum].Token));
+                        uploadserver = urlObj.response.upload_url;
+                    }
+                    catch (Exception ex)
+                    {
+                        if (isDebug) Interaction.MsgBox("В процессе получения ip сервера произошла ошибка. Код: " + ex.Message);
+                        log.Add(new LogItem(System.IO.Path.GetFileName(musicpath[i]), "Не выгружен"));
+                        continue;
+                    }
 
+                    String server = null;
+                    String audio = null;
+                    String hash = null;
+                    try
+                    {
+                        byte[] responseArray=null;
+                        await Task.Run(() =>
+                        {
+                            WebClient wc = new WebClient();
+                            responseArray = wc.UploadFile(uploadserver, "post", musicpath[i]);
+                        });
 
-                //Interaction.MsgBox(uploadserver);
-            }
- 
+                        dynamic paramsObj = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(responseArray));
+                        server = paramsObj.server;
+                        audio = paramsObj.audio;
+                        hash = paramsObj.hash;
+                    }
+                    catch (Exception ex)
+                    {
+                        if(isDebug) Interaction.MsgBox("В процессе выгрузки mp3 на сервер произошла ошибка. Код: " + ex.Message);
+                        log.Add(new LogItem(System.IO.Path.GetFileName(musicpath[i]), "Не выгружен"));
+                        continue;
+                    }
+
+                    String id = null;
+                    try
+                    {
+
+                        NameValueCollection queryString = System.Web.HttpUtility.ParseQueryString(string.Empty);
+                        queryString["server"] = server;
+                        queryString["audio"] = audio;
+                        queryString["hash"] = hash;
+                        dynamic saveObj = JsonConvert.DeserializeObject(await AccessVk("audio.save?" + queryString.ToString(), bots[botnum].Token));
+                        id = saveObj.response.id;
+                    }
+                    catch (Exception ex)
+                    {
+                        if (isDebug) Interaction.MsgBox("В процессе добавления в базу данных! Код: " + ex.Message);
+                        log.Add(new LogItem(System.IO.Path.GetFileName(musicpath[i]), "Не выгружен"));
+                        continue;
+                    }
+
+                    string ret = await AccessVk("audio.add?audio_id=" + id + "&owner_id=" + bots[botnum].ui.Id + "&group_id=" + groupid, bots[botnum].Token);
+                    if (!(ret.IndexOf("response") > 0))
+                    {
+                        if (isDebug) Interaction.MsgBox("Файл не выгружен: " + System.IO.Path.GetFileName(musicpath[i]));
+                        log.Add(new LogItem(System.IO.Path.GetFileName(musicpath[i]), "Не выгружен"));
+                    }
+                    else
+                    {
+                        log.Add(new LogItem(System.IO.Path.GetFileName(musicpath[i]), "Выгружен"));
+                        bots[botnum].Count++;
+                        musicpath.RemoveAt(i);
+                    }
+
+                }
+
+                if (needmorebots == true)
+                {
+                    Interaction.MsgBox("Вам не хватает ботов. Для выгрузки большего колличества требуется добавить!");
+                }
+
+                if (musicpath.Count > 0)
+                {
+                    MessageBoxResult messageBoxResult = System.Windows.MessageBox.Show("Не все аудио выложены. Скопировать их в отдельную папку?", "Не все аудио выложены.", System.Windows.MessageBoxButton.YesNo);
+                    if (messageBoxResult == MessageBoxResult.Yes)
+                    {
+                        string path = new FileInfo(musicpath[0]).Directory.FullName;
+                        int fcount = 1;
+                        while (true)
+                        {
+                            if (!Directory.Exists(path + @"\" + "tempdir" + fcount))
+                            {
+                                System.IO.Directory.CreateDirectory(path +@"\"+ "tempdir" + fcount);
+                                path = path + @"\" + "tempdir" + fcount;
+                                break;
+                            }
+                            fcount++;
+                        }
+                        foreach (var item in musicpath)
+                        {
+                            try
+                            {
+                            File.Copy(item, path + @"\" + System.IO.Path.GetFileName(item));
+                            }
+                            catch(Exception ex)
+                            {
+                            continue;
+                            }
+                        }
+                    }
+                }
         }
 
+        private void DebugChecked(object sender, RoutedEventArgs e)
+        {
+            if((sender as System.Windows.Controls.CheckBox).IsChecked == true)
+            {
+                isDebug = true;
+            }
+            else
+            {
+                isDebug = false;
+            }
+        }
+
+ 
+        private void ChooseGroupComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            StepC.Opacity = 1;
+        }
     }
 }
