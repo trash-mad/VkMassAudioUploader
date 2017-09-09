@@ -1,0 +1,30 @@
+﻿<Window x:Class="VkMassAudioUploader.AboutDeveloper"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:VkMassAudioUploader"
+        mc:Ignorable="d"
+        Title="AboutDeveloper" Height="300" Width="300">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"></RowDefinition>
+        </Grid.RowDefinitions>
+        <ScrollViewer Grid.Column="0">
+            <StackPanel>
+                <Image Height="75" Width="75"  Source="pack://application:,,,/VkMassAudioUploader;component/me.png"/>
+                <Label Content="Трипольский Пётр Петрович" HorizontalAlignment="Center"/>
+                <Rectangle Fill="Transparent"/>
+                <Label Content="Контакты:" />
+                <TextBlock TextWrapping="WrapWithOverflow" Margin="5" Text="Если у вас вдруг найдется для меня работа, свяжитесь со мной используя предоставленные данные"/>
+                <Label  Margin="5" Content="tripolskypetr@gmail.com" x:Name="mail" MouseLeftButtonUp="mail_MouseLeftButtonUp"/>
+                <Label  Margin="5" Content="8(999)983-00-24" x:Name="phone" MouseLeftButtonUp="phone_MouseLeftButtonUp"/>
+                <Label Content="О программе:" />
+                <TextBlock TextWrapping="WrapWithOverflow" Margin="5" Text="Программа позволяет ускорить выгрузку музыки в социальную сеть вконтакте в десятки раз..."/>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>

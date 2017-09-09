@@ -19,6 +19,8 @@ using System.IO;
 
 namespace VkMassAudioUploader
 {
+
+    [Serializable]
     public class UserInfo
     {
         public string Name { get; set; }

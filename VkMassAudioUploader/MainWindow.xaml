@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:VkMassAudioUploader"
         mc:Ignorable="d"
-        Title="MainWindow" Height="750" Width="525">
+        Title="MainWindow" Height="651" Width="525">
 
     <Window.Resources>
         <Style TargetType="ListBox" x:Key="BotListViewStyle" BasedOn="{StaticResource {x:Type ListBox}}">
@@ -35,14 +35,15 @@
             </Style.Triggers>
         </Style>
     </Window.Resources>
+    <DockPanel>
     <Menu DockPanel.Dock="Top">
         <MenuItem Header="Файл">
-            <MenuItem Header="Подгрузить токены ботов" Click="NewButton" />
-            <MenuItem Header="Сохранить токены ботов" Click="SaveData"/>
+            <MenuItem Header="Подгрузить токены ботов" Click="LoadMenuItemClick"  />
+                <MenuItem Header="Сохранить токены ботов" Click="SaveMenuItemClick" />
         </MenuItem>
         
         <MenuItem Header="О программе">
-            <MenuItem Header="Разработчик" Click="ShowDeveloper" />
+            <MenuItem Header="Разработчик"  Click="DeveloperMenuItemClick"/>
         </MenuItem>
     </Menu>
     <ScrollViewer>
@@ -85,6 +86,8 @@
                 <Grid Margin="10" x:Name="StepD">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"></ColumnDefinition>
+                        <ColumnDefinition Width="2"></ColumnDefinition>
+                        <ColumnDefinition Width="Auto"></ColumnDefinition>
                         <ColumnDefinition Width="*"></ColumnDefinition>
                         <ColumnDefinition Width="Auto"></ColumnDefinition>
                     </Grid.ColumnDefinitions>
@@ -92,7 +95,8 @@
                         <RowDefinition Height="*"></RowDefinition>
                     </Grid.RowDefinitions>
                     <Button Grid.Column="0" Content="Добавить" Click="AddButtonClick"/>
-                    <Button Grid.Column="2" Content="Удалить" Click="RemoveButtonClick"/>
+                    <Button Grid.Column="2" Content="Сбросить счетчик" Click="ClearCountButtonClick"/>
+                    <Button Grid.Column="4" Content="Удалить" Click="RemoveButtonClick"/>
                 </Grid>
             </StackPanel>
             <StackPanel Opacity="0.5" x:Name="StepE">
@@ -128,4 +132,5 @@
             <CheckBox Content="Подробно объяснять, почему файл не выложен" Checked="DebugChecked" />
         </StackPanel>
     </ScrollViewer>
+        </DockPanel>
 </Window>

@@ -23,6 +23,7 @@ using System.Net.Http;
 using SeasideResearch.LibCurlNet;
 using System.Collections.Specialized;
 using System.Drawing;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace VkMassAudioUploader
 {
@@ -37,6 +38,46 @@ namespace VkMassAudioUploader
         public string Id { get; set; }
     }
 
+    [Serializable]
+    public class BotSaver
+    {
+        List<SerializableBot> list;
+
+        public BotSaver()
+        {
+            list = new List<SerializableBot>();
+        }
+
+        [Serializable]
+        public class SerializableBot
+        {
+            public UserInfo ui = null;
+            public int count = 0;
+        }
+
+        public void AddBots(Bot[] arr)
+        {
+            foreach (var item in arr)
+            {
+                SerializableBot tmp = new SerializableBot();
+                tmp.ui = item.ui;
+                tmp.count = item.Count;
+                list.Add(tmp);
+            }
+        }
+
+        public Bot[] GetBots()
+        {
+            List<Bot> ret = new List<Bot>();
+            foreach (var item in list)
+            {
+                ret.Add(new Bot(item.ui, item.count));
+            }
+            return ret.ToArray();
+        }
+
+    }
+    
     public class Bot : INotifyPropertyChanged
     {
         public Bot(UserInfo ui,int Count)
@@ -363,6 +404,96 @@ namespace VkMassAudioUploader
         private void ChooseGroupComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             StepC.Opacity = 1;
+        }
+
+        private void DeveloperMenuItemClick(object sender, RoutedEventArgs e)
+        {
+            AboutDeveloper ad = new AboutDeveloper();
+            ad.ShowDialog();
+        }
+
+        private void SaveMenuItemClick(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog saveFileDialog1 = new SaveFileDialog();
+
+            saveFileDialog1.Filter = "binary files (*.bin)|*.bin";
+            saveFileDialog1.FilterIndex = 1;
+            saveFileDialog1.RestoreDirectory = true;
+            saveFileDialog1.ShowDialog();
+
+            string filename = saveFileDialog1.FileName;
+            if (!String.IsNullOrEmpty(filename))
+            {
+                try
+                {
+                    BotSaver bs = new BotSaver();
+                    bs.AddBots(bots.ToArray());
+
+                    BinaryFormatter formatter = new BinaryFormatter();
+                    using (FileStream fs = new FileStream(filename, FileMode.OpenOrCreate))
+                    {
+                        formatter.Serialize(fs, bs);
+                        fs.Close();
+                    }
+                    Interaction.MsgBox("Сохранено в " + filename);
+                }
+                catch (Exception ex)
+                {
+                    Interaction.MsgBox("Ошибка: " + ex.Message);
+                }
+            }
+        }
+
+        private void LoadMenuItemClick(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openFileDialog1 = new OpenFileDialog();
+
+            openFileDialog1.Filter = "binary files (*.bin)|*.bin";
+            openFileDialog1.FilterIndex = 1;
+            openFileDialog1.RestoreDirectory = true;
+            openFileDialog1.ShowDialog();
+
+            string filename = openFileDialog1.FileName;
+            if (!String.IsNullOrEmpty(filename))
+            {
+                try
+                {
+                    BinaryFormatter formatter = new BinaryFormatter();
+                    FileStream fs = new FileStream(filename, FileMode.OpenOrCreate);
+
+                    BotSaver saver = (BotSaver)formatter.Deserialize(fs);
+                    Bot[] arr = saver.GetBots();
+                    bots.Clear();
+                    foreach (var item in arr)
+                    {
+                        bots.Add(item);
+                    }
+
+                    fs.Close();
+
+                    Interaction.MsgBox("Восстановлено из " + filename);
+                }
+                catch (Exception ex)
+                {
+                    Interaction.MsgBox("Произошла ошибка: " + ex.Message);
+                }
+                StepB.Opacity = 1;
+                StepC.Opacity = 1;
+                StepD.Opacity = 1;
+                StepE.Opacity = 1;
+                StepF.Opacity = 1;
+            }
+        }
+
+        private void ClearCountButtonClick(object sender, RoutedEventArgs e)
+        {
+            var item = BotListView.SelectedItem as Bot;
+            if (item == null)
+            {
+                Interaction.MsgBox("Кликни на бота!");
+                return;
+            }
+            item.Count = 0;
         }
     }
 }
