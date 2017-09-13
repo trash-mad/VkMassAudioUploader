@@ -125,7 +125,7 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
-                <Button Content="Отправить" Click="StartUploadButtonClick" Margin="10"/>
+                    <Button Content="Отправить" Click="StartUploadButtonClick" Margin="10"/>
             </StackPanel>
             <Rectangle Fill="Transparent" Height="250"/>
             <Label FontSize="20" Content="Дополнительно"/>
