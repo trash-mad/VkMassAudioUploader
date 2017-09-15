@@ -156,7 +156,7 @@ namespace VkMassAudioUploader
                 {
                     responseText = reader.ReadToEnd();
                 }
-                if (responseText.IndexOf("error") > 0 && isDebug) Interaction.MsgBox(responseText);
+                if (responseText.IndexOf("error") > 0 && isDebug) Task.Run(() => Interaction.MsgBox(responseText));
                 return responseText;
             });
         }
@@ -284,6 +284,8 @@ namespace VkMassAudioUploader
                 {
                     string[] files = Directory.GetFiles(fbd.SelectedPath);
 
+                    musicpath.Clear();
+                
                     int count = 0;
                     foreach (string item in files)
                     {
@@ -311,7 +313,7 @@ namespace VkMassAudioUploader
             }
             catch (Exception ex)
             {
-                if (isDebug) Interaction.MsgBox("В процессе получения ip сервера произошла ошибка. Код: " + ex.Message);
+                if (isDebug) Task.Run(()=>Interaction.MsgBox("В процессе получения ip сервера произошла ошибка. Код: " + ex.Message));
                 logAccess = (new LogItem(System.IO.Path.GetFileName(filename), "Не выгружен"));
                 return null;
             }
@@ -333,7 +335,7 @@ namespace VkMassAudioUploader
             }
             catch (Exception ex)
             {
-                if (isDebug) Interaction.MsgBox("В процессе выгрузки mp3 на сервер произошла ошибка. Код: " + ex.Message);
+                if (isDebug) Task.Run(() => Interaction.MsgBox("В процессе выгрузки mp3 на сервер произошла ошибка. Код: " + ex.Message));
                 logAccess = (new LogItem(System.IO.Path.GetFileName(filename), "Не выгружен"));
                 return null;
             }
@@ -351,7 +353,7 @@ namespace VkMassAudioUploader
             }
             catch (Exception ex)
             {
-                if (isDebug) Interaction.MsgBox("В процессе добавления в базу данных! Код: " + ex.Message);
+                if (isDebug) Task.Run(() => Interaction.MsgBox("В процессе добавления в базу данных! Код: " + ex.Message));
                 logAccess=(new LogItem(System.IO.Path.GetFileName(filename), "Не выгружен"));
                 return null;
             }
@@ -417,8 +419,12 @@ namespace VkMassAudioUploader
 
         private async void StartUploadButtonClick(object sender, RoutedEventArgs e)
         {
+
             await Task.Run(async () =>
             {
+
+                List<int> notuploadedindex = new List<int>();
+
                 if (ChooseGroupComboBoxSelectedItem == null)
                 {
                     Interaction.MsgBox("Нужно выбрать группу! См. шаг 2");
@@ -444,18 +450,24 @@ namespace VkMassAudioUploader
                 int botnum = 0;
 
                 //Работаем с ботами по порядку
-                for (int i = musicpathAccess.Count - 1; i >= 0; i--)
+                for (int i = musicpathAccess.Count-1; i >= 0; i--)
                 {
 
                     if (BotAccess[botnum].Count >= 20)
                     {
                         botnum++;
+                        i++;
+                        continue;
                     }
+
                     if (botnum > BotAccess.Count - 1)
                     {
                         needmorebots = true;
+                        for (int j = i; j >= 0; j--)
+                            notuploadedindex.Add(i);
                         break;
                     }
+
 
 
                     String id = UploadAudioAndReturnIdOrNull(BotAccess[botnum].Token, musicpathAccess[i]);
@@ -464,14 +476,14 @@ namespace VkMassAudioUploader
                     string ret = await AccessVk("audio.add?audio_id=" + id + "&owner_id=" + BotAccess[botnum].ui.Id + "&group_id=" + groupid, admininfo.Token);
                     if (!(ret.IndexOf("response") > 0))
                     {
-                        if (isDebug) Interaction.MsgBox("Файл не выгружен: " + System.IO.Path.GetFileName(musicpathAccess[i]));
+                        if (isDebug) Task.Run(() => Interaction.MsgBox("Файл не выгружен: " + System.IO.Path.GetFileName(musicpathAccess[i])));
                         logAccess=(new LogItem(System.IO.Path.GetFileName(musicpathAccess[i]), "Не выгружен"));
                     }
                     else
                     {
                         logAccess=(new LogItem(System.IO.Path.GetFileName(musicpathAccess[i]), "Выгружен"));
                         BotAccess[botnum].Count++;
-                        musicpathAccess.RemoveAt(i);
+                        notuploadedindex.Add(i);
                     }
 
 
@@ -482,30 +494,64 @@ namespace VkMassAudioUploader
                     Interaction.MsgBox("Вам не хватает ботов. Для выгрузки большего колличества требуется добавить!");
                 }
 
-                if (musicpathAccess.Count > 0)
+                if (notuploadedindex.Count > 0)
                 {
-                    MessageBoxResult messageBoxResult = System.Windows.MessageBox.Show("Не все аудио выложены. Скопировать их в отдельную папку?", "Не все аудио выложены.", System.Windows.MessageBoxButton.YesNo);
+                    MessageBoxResult messageBoxResult = System.Windows.MessageBox.Show("Переместить выгруженные в новую папку?", "Аудио выгружены", System.Windows.MessageBoxButton.YesNo);
                     if (messageBoxResult == MessageBoxResult.Yes)
                     {
 
                             string result = OpenDialog;
                             if (!string.IsNullOrWhiteSpace(result))
                             {
-                                foreach (var item in musicpathAccess)
+                                foreach (var item in notuploadedindex)
                                 {
                                     try
                                     {
-                                        File.Move(item, result + @"\" + System.IO.Path.GetFileName(item));
+                                    
+                                        File.Move(musicpathAccess[item], result + @"\" + System.IO.Path.GetFileName(musicpathAccess[item]));
                                     }
                                     catch (Exception ex)
                                     {
+                                        Task.Run(() => Interaction.MsgBox("Файл не выгружен: " + ex.Message));
                                         continue;
                                     }
                                 }
 
                             }
+                            else
+                            {
+                            Interaction.MsgBox("Папка не выбрана, выгруженные будут удалены");
+                            foreach (var item in notuploadedindex)
+                            {
+                                try
+                                {
+                                    File.Delete(musicpathAccess[item]);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Task.Run(() => Interaction.MsgBox("Файл не удален: " + ex.Message));
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (var item in notuploadedindex)
+                        {
+                            try
+                            {
+                                File.Delete(musicpathAccess[item]);
+                            }
+                            catch (Exception ex)
+                            {
+                                Task.Run(() => Interaction.MsgBox("Файл не удален: " + ex.Message));
+                                continue;
+                            }
+                        }
                     }
                 }
+
             });
         }
 
