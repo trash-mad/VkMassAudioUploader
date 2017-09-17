@@ -143,20 +143,56 @@ namespace VkMassAudioUploader
             }
         }
 
+
+
+
+
         public static Task<string> AccessVk(string parameters, string token)
         {
             return Task.Run(() =>
             {
-                string url = "https://api.vk.com/method/" + parameters + "&access_token=" + token + "&v=5.68";
-                HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
-                ServicePointManager.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback((object sender, System.Security.Cryptography.X509Certificates.X509Certificate certification, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors) => { return true; });
-                HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+                bool needcaptcha = false;
                 string responseText;
-                using (var reader = new System.IO.StreamReader(response.GetResponseStream()))
+
+                string captchaparam = "";
+
+                do
                 {
-                    responseText = reader.ReadToEnd();
+                    string url = "https://api.vk.com/method/" + parameters + "&access_token=" + token + "&v=5.68" + captchaparam;
+                    HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
+                    ServicePointManager.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback((object sender, System.Security.Cryptography.X509Certificates.X509Certificate certification, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors) => { return true; });
+                    HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+                    
+                    using (var reader = new System.IO.StreamReader(response.GetResponseStream()))
+                    {
+                        responseText = reader.ReadToEnd();
+                    }
+
+
+                    if (responseText.IndexOf("error") > 0 && isDebug) Task.Run(() => Interaction.MsgBox(responseText));
+
+                    if (responseText.ToLower().IndexOf("captcha") > 0)
+                    {
+                        needcaptcha = true;
+
+
+                        System.Windows.Application.Current.Dispatcher.Invoke(delegate
+                        {
+                            VkCaptcha captcha = new VkCaptcha(responseText);
+                            captcha.ShowDialog();
+                            captchaparam = captcha.GetCaptchaCode();
+                        });
+
+                    }
+                    else
+                    {
+                        needcaptcha = false;
+                    }
+
+                    //if (parameters.IndexOf("save") > 0) Interaction.InputBox(" ", " ", url);
+                    
                 }
-                if (responseText.IndexOf("error") > 0 && isDebug) Task.Run(() => Interaction.MsgBox(responseText));
+                while (needcaptcha);
                 return responseText;
             });
         }
@@ -190,7 +226,7 @@ namespace VkMassAudioUploader
         {
 
             var file = System.IO.Path.GetTempPath() + "vklogin.bin";
-
+            Interaction.MsgBox(file);
             try
             {
                 if (File.Exists(file))
@@ -453,20 +489,20 @@ namespace VkMassAudioUploader
                 for (int i = musicpathAccess.Count-1; i >= 0; i--)
                 {
 
-                    if (BotAccess[botnum].Count >= 20)
+                    if (BotAccess[botnum].Count >= 100)
                     {
                         botnum++;
+
+                        if (botnum > BotAccess.Count - 1)
+                        {
+                            needmorebots = true;
+                            break;
+                        }
+
                         i++;
                         continue;
                     }
 
-                    if (botnum > BotAccess.Count - 1)
-                    {
-                        needmorebots = true;
-                        for (int j = i; j >= 0; j--)
-                            notuploadedindex.Add(i);
-                        break;
-                    }
 
 
 
@@ -503,17 +539,17 @@ namespace VkMassAudioUploader
                             string result = OpenDialog;
                             if (!string.IsNullOrWhiteSpace(result))
                             {
-                                foreach (var item in notuploadedindex)
+                                for(int i=0;i<notuploadedindex.Count;i++)
                                 {
                                     try
                                     {
                                     
-                                        File.Move(musicpathAccess[item], result + @"\" + System.IO.Path.GetFileName(musicpathAccess[item]));
+                                        File.Move(musicpathAccess[notuploadedindex[i]], result + @"\" + System.IO.Path.GetFileName(musicpathAccess[notuploadedindex[i]]));
                                     }
                                     catch (Exception ex)
                                     {
                                         Task.Run(() => Interaction.MsgBox("Файл не выгружен: " + ex.Message));
-                                        continue;
+                                        i++;
                                     }
                                 }
 
@@ -521,32 +557,32 @@ namespace VkMassAudioUploader
                             else
                             {
                             Interaction.MsgBox("Папка не выбрана, выгруженные будут удалены");
-                            foreach (var item in notuploadedindex)
+                            for (int i = 0; i < notuploadedindex.Count; i++)
                             {
                                 try
                                 {
-                                    File.Delete(musicpathAccess[item]);
+                                    File.Delete(musicpathAccess[notuploadedindex[i]]);
                                 }
                                 catch (Exception ex)
                                 {
                                     Task.Run(() => Interaction.MsgBox("Файл не удален: " + ex.Message));
-                                    continue;
+                                    i++;
                                 }
                             }
                         }
                     }
                     else
                     {
-                        foreach (var item in notuploadedindex)
+                        for(int i=0;i<notuploadedindex.Count;i++)
                         {
                             try
                             {
-                                File.Delete(musicpathAccess[item]);
+                                File.Delete(musicpathAccess[notuploadedindex[i]]);
                             }
                             catch (Exception ex)
                             {
                                 Task.Run(() => Interaction.MsgBox("Файл не удален: " + ex.Message));
-                                continue;
+                                i++;
                             }
                         }
                     }
